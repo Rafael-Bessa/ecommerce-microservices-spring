@@ -1,6 +1,8 @@
 package bessa.morangon.rafael.order.service.service;
 
 import bessa.morangon.rafael.order.service.client.ProductClient;
+import bessa.morangon.rafael.order.service.config.RabbitMQConfig;
+import bessa.morangon.rafael.order.service.event.OrderCreatedEvent;
 import bessa.morangon.rafael.order.service.exception.OrderNotFoundException;
 import bessa.morangon.rafael.order.service.exception.ProductServiceUnavailableException;
 import bessa.morangon.rafael.order.service.model.Order;
@@ -11,6 +13,7 @@ import bessa.morangon.rafael.order.service.model.dto.ProductResponse;
 import bessa.morangon.rafael.order.service.repository.OrderRepository;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.AllArgsConstructor;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -25,6 +28,7 @@ public class OrderService {
     private final OrderRepository repository;
     private final OrderMapper mapper;
     private final ProductClient client;
+    private final RabbitTemplate rabbitTemplate;
 
     public OrderResponse findById(Long id) {
         return repository.findById(id)
@@ -40,7 +44,16 @@ public class OrderService {
         Order order = mapper.toEntity(request);
         order.setTotalPrice(product.price().multiply(BigDecimal.valueOf(request.quantity())));
 
-        return mapper.toResponse(repository.save(order));
+        OrderResponse response = mapper.toResponse(repository.save(order));
+
+        // publica evento após salvar
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.EXCHANGE,
+                RabbitMQConfig.ROUTING_KEY,
+                new OrderCreatedEvent(response.id(), request.productId(), request.quantity())
+        );
+
+        return response;
     }
 
     public Page<OrderResponse> findAll(Pageable pageable) {

@@ -8,11 +8,13 @@ import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.util.List;
 
 @RestController
 @AllArgsConstructor
@@ -35,6 +37,15 @@ public class ProductController {
         URI uri = builder.path("/products/{id}").buildAndExpand(response.id()).toUri();
         return ResponseEntity.created(uri).body(response);
     }
+
+    @PostMapping("/batch")
+    public ResponseEntity<List<ProductResponse>> saveBatch(
+            @RequestBody @Valid List<ProductRequest> requests,
+            UriComponentsBuilder builder) {
+        List<ProductResponse> responses = service.saveBatch(requests);
+        return ResponseEntity.status(HttpStatus.CREATED).body(responses);
+    }
+
 
     @PutMapping("/{id}")
     public ResponseEntity<ProductResponse> updateProduct(@RequestBody @Valid ProductRequest request, @PathVariable Long id){

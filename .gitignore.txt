@@ -17,4 +17,5 @@ Thumbs.db
 **/*.log
 
 # Environment
+.env
 **/*.env

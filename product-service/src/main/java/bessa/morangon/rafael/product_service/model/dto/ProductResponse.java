@@ -1,5 +1,6 @@
 package bessa.morangon.rafael.product_service.model.dto;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 
 public record ProductResponse(
@@ -8,4 +9,4 @@ public record ProductResponse(
         String description,
         BigDecimal price,
         Integer quantity
-) {}
+) implements Serializable {}
